@@ -1,0 +1,25 @@
+{
+  "name": "rwind-java",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev":"vuepress dev .",
+    "build":"vuepress build ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jason6833/rwind-java.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jason6833/rwind-java/issues"
+  },
+  "homepage": "https://github.com/jason6833/rwind-java#readme",
+  "devDependencies": {
+    "vuepress": "^0.14.11"
+  }
+}
