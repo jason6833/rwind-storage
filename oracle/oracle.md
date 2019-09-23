@@ -650,3 +650,74 @@ CREATE TABLESPACE indx_tbs LOGGING DATAFILE '/u01/app/oracle/oradata/mynewdb/ind
 * Back Up the Database
 
 * (Optional) Enable Automatic Instance Startup
+
+## 创建表空间
+
+* oracle在创建表空间的时候要对应一个用户，表空间和用户一般一一对应，mysql和sql server直接通过`create databse 数据库名`就可以直接创建数据库了，而oracle创建一个表空间需要以下三个步骤
+
+    * 建两个表空间的文件
+
+    * 创建用户与上面创建的文件形成映射关系
+
+    * 给用户添加权限
+
+* 创建两个表空间的文件(`monitor.dbf`和`monitor_temp.dbf`两个文件)
+
+    ```sql
+    CREATE TABLESPACE monitor LOGGING DATAFILE 'E:\app\owner\oradata\orcl\monitor.dbf' 
+    SIZE 100M AUTOEXTEND ON NEXT 32M MAXSIZE 500M EXTENT MANAGEMENT LOCAL;
+
+    CREATE temporary tablespace monitor_temp tempfile 'E:\app\owner\oradata\orcl\monitor_temp.dbf'
+    size 100m autoextend on next 32m maxsize 500m extent management local;
+    ```
+
+* 创建用户与上面创建的文件形成映射关系(用户名为monitor，密码为monitor)
+
+    ```sql
+    CREATE USER monitor IDENTIFIED BY monitor DEFAULT TABLESPACE monitor TEMPORARY TABLESPACE monitor_temp;
+    ```
+
+* 添加权限
+
+    ```sql
+    grant connect,resource,dba to monitor;
+    grant create session to monitor;
+    ```
+
+* 删除表空间
+
+    ```sql
+    DROP TABLESPACE monitor INCLUDING CONTENTS AND DATAFILES;
+    ```
+
+* 删除用户
+
+    ```sql
+    drop user monitor cascade;
+    ```
+
+* 查看所有的表空间
+
+    ```sql
+    SQL>col file_name for a60;
+    SQL>set linesize 160;
+    SQL>select file_name,tablespace_name,bytes from dba_data_files;
+    ```
+
+    <img src="./images/oracle/39.png">
+
+    ```sql
+    SELECT
+        a.tablespace_name,
+        a.bytes / 1024 / 1024 "sum MB",
+        ( a.bytes - b.bytes ) / 1024 / 1024 "used MB",
+        b.bytes / 1024 / 1024 "free MB",
+        round( ( ( a.bytes - b.bytes ) / a.bytes ) * 100, 2 ) "used%" 
+    FROM
+        ( SELECT tablespace_name, sum( bytes ) bytes FROM dba_data_files GROUP BY tablespace_name ) a,
+        ( SELECT tablespace_name, sum( bytes ) bytes, max( bytes ) largest FROM dba_free_space GROUP BY tablespace_name ) b 
+    WHERE
+        a.tablespace_name = b.tablespace_name 
+    ORDER BY
+        ( ( a.bytes - b.bytes ) / a.bytes ) DESC;
+    ```
