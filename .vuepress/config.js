@@ -10,6 +10,7 @@ module.exports = {
   ],
   themeConfig: {
     nav: [
+      { text: 'Oracle', link: '/oracle/' },
       { text: 'MySQL', link: '/mysql/' },
       { text: 'Redis', link: '/redis/' },
       { text: 'Github', link: 'https://github.com/jason6833/rwind-storage/' }
