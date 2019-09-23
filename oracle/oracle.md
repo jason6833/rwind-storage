@@ -664,11 +664,9 @@ CREATE TABLESPACE indx_tbs LOGGING DATAFILE '/u01/app/oracle/oradata/mynewdb/ind
 * 创建两个表空间的文件(`monitor.dbf`和`monitor_temp.dbf`两个文件)
 
     ```sql
-    CREATE TABLESPACE monitor LOGGING DATAFILE 'E:\app\owner\oradata\orcl\monitor.dbf' 
-    SIZE 100M AUTOEXTEND ON NEXT 32M MAXSIZE 500M EXTENT MANAGEMENT LOCAL;
+    CREATE TABLESPACE monitor LOGGING DATAFILE 'E:\app\owner\oradata\orcl\monitor.dbf' SIZE 100M AUTOEXTEND ON NEXT 32M MAXSIZE 500M EXTENT MANAGEMENT LOCAL;
 
-    CREATE temporary tablespace monitor_temp tempfile 'E:\app\owner\oradata\orcl\monitor_temp.dbf'
-    size 100m autoextend on next 32m maxsize 500m extent management local;
+    CREATE temporary tablespace monitor_temp tempfile 'E:\app\owner\oradata\orcl\monitor_temp.dbf' size 100m autoextend on next 32m maxsize 500m extent management local;
     ```
 
 * 创建用户与上面创建的文件形成映射关系(用户名为monitor，密码为monitor)
@@ -721,3 +719,287 @@ CREATE TABLESPACE indx_tbs LOGGING DATAFILE '/u01/app/oracle/oradata/mynewdb/ind
     ORDER BY
         ( ( a.bytes - b.bytes ) / a.bytes ) DESC;
     ```
+
+## 数据导入/导出
+
+* oracle 11g数据库的导入/导出，就是我们通常所说的oracle数据的还原/备份
+
+    * 数据库导入：把`.dmp`格式文件从本地导入到数据库服务器中
+
+    * 数据库导出：把数据库服务器中的数据，导出到本地生成`.dmp`格式文件
+
+    * `.dmp`格式文件：就是oracle数据的文件格式
+
+* 导入导出方式
+
+    * 传统方式——exp(导出)和(imp)导入
+
+        * 优点：代码书写简单易懂，从本地即可直接导入，不用在服务器中操作，降低难度，减少服务器上的操作也就保证了服务器上数据文件的安全性
+
+        * 这种导入导出的速度相对较慢，适合数据库数据较少的时候，如果文件超过几个G，大众性能的电脑，至少需要4~5个小时左右
+
+    * 数据泵方式——expdp(导出)和impdp(导入)
+
+        * 优点：导入导出速度相对较快，几个G的数据文件一般在1~2小时左右
+
+        * 缺点：代码相对不易理解，要想实现导入导出的操作，必须在服务器上创建逻辑目录(不是真正的目录)，我们都知道数据库服务器的重要性，所以在上面的操作必须慎重，所以这种方式一般由专业的程序人员来完成
+
+    * 第三方工具——PL/sql Develpoer
+
+        * 优点：封装了导入导出命令，无需每次都手动输入命令，方便快捷，提高效率
+
+        * 缺点：长时间应用会对其产生依赖，降低对代码执行原理的理解
+
+* 前期准备
+
+    * 目标数据库：数据即将导入的数据库(一般是项目上正式数据库)
+
+    * 源数据库：数据导出的数据库(一般是项目上的测试数据库)
+
+    * 目标数据库要与源数据库有着名称相同的表空间
+
+    * 目标数据在进行导入时，用户名尽量相同(这样保证用户的权限级别相同)
+
+    * 目标数据库每次在进行数据导入前，应做好数据备份，以防数据丢失
+
+    * 使用数据泵时，一定要先在服务器端建立可用的逻辑目录，并检查是否可用
+
+    * 弄清是导入导出到相同版本还是不同版本(oracle10g版本与oracle11g版本)
+
+    * 目标数据导入前，弄清楚是数据覆盖(替换)，还是仅插入新数据或替换部分数据表
+
+    * 确定目标数据库磁盘空间是否足够容纳新数据，是否需要扩充表空间
+
+    * 导入导出时注意字符集是否相同，一般Oracle数据库的字符集只有一个，并且固定，一般不改变
+
+    * 导出格式介绍
+
+        * Dmp格式：`.dmp`是二进制文件，可跨平台，还能包含权限，效率好
+
+        * Sql格式：`.sql`格式的文件，可用文本编辑器查看，通用性比较好，效率不如第一种，适合小数据量导入导出，尤其注意的是表中不能有大字段(blob,clob,long)，如果有，会报错
+
+        * Pde格式：`.pde`格式的文件，`.pde`为PL/SQL Developer自有的文件格式，只能用PL/SQL Developer工具导入导出，不能用文本编辑器查看
+
+    * 确定操作者的账号权限
+
+### exp/imp
+
+* 通用命令
+
+    ```sql
+    exp(imp) username/password@SERVICENAME:1521 file="e:\temp.dmp" full = y;
+    ```
+
+    ```sql
+    exp xinxiaoyong/123456@127.0.0.1:1521 file="e:\temp.dmp" full = y;
+    ```
+
+    * `exp`：导出命令，导出时必写
+
+    * `imp`：导入命令，导入时必写，每次操作，二者只能选择一个执行
+
+    * `username`：导出数据的用户名，必写
+
+    * `password`：导出数据的密码，必写
+
+    * `@`：地址符号，必写
+
+    * `SERVICENAME`：Oracle的服务名，必写
+
+    * `1521`：端口号，1521是默认的可以不写，非默认要写
+
+    * `file="e:\temp.dmp"`: 文件存放路径地址，必写
+
+    * `full=y`：表示全库导出，可以不写，则默认为no，则只导出用户下的对象
+
+* 方法细分
+
+    * 完全导入导出
+
+    ```sql
+    exp(imp) username/password@SERVICENAME:1521 file="e:\temp.dmp" full = y;
+    ```
+
+    * 部分用户表table导入导出
+
+    ```sql
+    exp(imp) username/password@SERVICENAME:1521 file="e:\temp.dmp" tabels=(table1,table2,table3,...);
+    ```
+
+    * 表空间tablespaces导入导出，一个数据库实例可以有N个表空间(tablespace)，一个表空间下可以有N张表(table)
+
+    ```sql
+    exp(imp) username/password@SERVICENAME:1521 file="e:\temp.dmp" tablespaces=(tablespace1,tablespace2,tablespace3,...);
+    ```
+
+    * 用户名username对象导入导出
+
+    ```sql
+    exp(imp)  username/password@SERVICENAME:1521 file="e:\temp.dmp" owner(username1,username2,username3);
+    ```
+
+### expdp/impdp
+
+* 创建directory
+
+    ```sql
+    expdp(impdp) username/password@SERVICENAME:1521 schemas=username dumpfile=file1.dmp logfile=file1.log directory=testdata1 remap_schema=test:test;
+    ```
+
+    ```sql
+    expdp xinxiaoyong/123456@127.0.0.1:1521 schemas=xinxiaoyong dumpfile=test.dmp logfile=test.log directory=testdata1;
+    ```
+
+    * `expdp`：导出命令，导出时必写
+
+    * `impdp`：导入命令，导入时必写，每次操作，二者只能选择一个执行
+
+    * `username`：导出数据的用户名，必写
+
+    * `password`：导出数据的密码，必写
+
+    * `@`：地址符号，必写
+
+    * `SERVICENAME`：Oracle的服务名，必写
+
+    * `1521`：端口号，1521是默认的可以不写，非默认要写
+
+    * `schemas`：导出操作的用户名
+
+    * `dumpfile`：导出的文件
+
+    * `logfile`：导出的日志文件，可以不写
+
+    * `directory`：创建的文件夹名称
+
+    * `remap_schema=源数据库用户名:目标数据库用户名`，二者不同时必写，相同可以省略
+
+* 查看表空间
+
+    ```sql
+    select * from dba_tablespaces;
+    ```
+
+* 查看管理理员目录
+
+    ```sql
+    select * from dba_directories
+    ```
+
+* 创建逻辑目录，该命令不会在操作系统创建真正的目录，最好以system等管理员创建
+
+    ```sql
+    create directory testdata1 as 'd:\test\dump'
+    ```
+
+* 给xinxiaoyong用户赋予在指定目录的操作权限，最好以system等管理员赋予
+
+    ```sql
+    grant read,write on directory testdata1 to xinxiaoyong;
+    ```
+
+* 导出数据
+
+    * 按用户导
+    
+    ```sql
+    expdp xinxiaoyong/123456@orcl schemas=xinxiaoyong dumpfile=expdp.dmp directory=testdata1;
+    ```
+
+    * 并行进程
+
+    ```sql
+    parallel expdp xinxiaoyong/123456@orcl directory=testdata1 dumpfile=xinxiaoyong3.dmp parallel=40 job_name=xinxiaoyong3
+    ```
+
+    * 按表名导
+
+    ```sql
+    expdp xinxiaoyong/123456@orcl tables=emp,dept dumpfile=expdp.dmp directory=testdata1;
+    ```
+
+    * 按查询条件导
+
+    ```sql
+    expdp xinxiaoyong/123456@orcl directory=testdata1 dumpfile=expdp.dmp tables=emp query='WHERE deptno=20';
+    ```
+
+    * 按表空间导
+
+    ```sql
+    expdp system/manager directory=testdata1 dumpfile=tablespace.dmp tablespaces=temp,example;
+    ```
+
+    * 导整个数据库
+
+    ```sql
+    expdp system/manager directory=testdata1 dumpfile=full.dmp FULL=y;
+    ```
+
+* 还原数据
+
+    * 导到指定用户下
+
+    ```sql
+    impdp xinxiaoyong/123456 directory=testdata1 dumpfile=expdp.dmp schemas=xinxiaoyong;
+    ```
+
+    * 改变表的owner 
+
+    ```sql
+    impdp system/manager directory=testdata1 dumpfile=expdp.dmp tables=xinxiaoyong.dept remap_schema =xinxiaoyong:system;
+    ```
+
+    * 导入表空间
+
+    ```sql
+    impdp system/manager directory=testdata1 dumpfile=tablespace.dmp tablespaces=example;
+    ```
+
+    * 导入数据库
+
+    ```sql
+    impdb system/manager directory=dump_dir dumpfile=full.dmp FULL=y;
+    ```
+
+    * 追加数据
+
+    ```sql
+    impdp system/manager directory=testdata1 dumpfile=expdp.dmp schemas=system  table_exists_action;
+    ```
+
+### PLSQL方法
+
+* 登录plsql工具，所使用用户为源数据库有导出权限(exp_full_database,dba等的用户
+
+* 导出建表语句(包括存储结构)
+
+    * 导出步骤`tools -> export user object`，选择要导出的对象，导出`.sql`格式文件并等待导出完成，如下图
+
+    <img src="./images/oracle/40.png">
+
+* 导出数据文件
+
+    * 导出步骤`tools ->export tables`，选择要导出的表及导出的格式进行导出，导出为dmp格式，如下图
+
+    <img src="./images/oracle/41.png">
+
+    * 导出为sql格式，如下图
+
+    <img src="./images/oracle/42.png">
+
+    * 导出为pde格式，如下图
+
+    <img src="./images/oracle/43.png">
+
+    * 提示说明：采用第三方工具导出导入整个数据库的话，耗时较长，一定要有足够的时间来操作(数据量大的话需要好几个小时)
+
+* 导入建表语句
+
+    * 导入步骤`tools->import tables->SQL Inserts`导入`.sql`文件
+
+* 导入数据
+
+    * `tools->import talbes`，然后再根据导出的数据格式选择导入dmp文件，或者sql文件，或者pde文件
+
+    * 提示说明：导入之前最好把以前的表删除，当然导入另外数据库除外，另外导入时当发现进度条一直卡在一个点，而且导出的文件不再增大时，甚至是提示程序未响应，千万不要以为程序卡死了，这个导入导出就是比较缓慢，只要没有提示报错或者导入完成就不要停止程序
