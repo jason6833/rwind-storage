@@ -111,7 +111,7 @@ sidebarDepth: 2
 * 上面的语句创建了一个名为`OT`的新用户，并在`IDENTIFIED BY`子句之后指定了一个密码，在这个示例中，创建的用户`OT`对应的密码为`Orcl1234`，之后，通过使用以下`GRANT`语句授予`OT`用户权限
 
     ```sql
-    SQL> GRANT CONNECT, RESOURCE, DBA TO OT;
+    SQL> GRANT CONNECT, RESOURCE,DBA TO OT;
 
     Grant succeeded.
     ```
@@ -678,7 +678,8 @@ CREATE TABLESPACE indx_tbs LOGGING DATAFILE '/u01/app/oracle/oradata/mynewdb/ind
 * 添加权限
 
     ```sql
-    grant connect,resource,dba to monitor;
+    grant connect,dba,resource to monitor;
+    grant select any table to monitor;
     grant create session to monitor;
     ```
 
