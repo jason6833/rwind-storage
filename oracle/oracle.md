@@ -720,6 +720,71 @@ CREATE TABLESPACE indx_tbs LOGGING DATAFILE '/u01/app/oracle/oradata/mynewdb/ind
         ( ( a.bytes - b.bytes ) / a.bytes ) DESC;
     ```
 
+## TNS配置
+
+* Oracle中TNS的完整定义：`transparence Network Substrate`透明网络底层，监听服务是它重要的一部分，不是全部，不要把TNS当作只是监听器
+
+    * TNS是Oracle Net的一部分，专门用来管理和配置Oracle数据库和客户端连接的一个工具，在大多数情况下客户端和数据库要通讯，必须配置TNS，当然在少数情况下，不用配置TNS也可以连接Oracle数据库，比如通过JDBC，如果通过TNS连接Oracle，那么客户端必须安装Oracle client程序
+
+    * Oracle当中，如果想访问某个服务器，必须要设置TNS，它不像SQL SERVER那样在客户端自动列举出在局域网内所有的在线服务器，只需在客户端选择需要的服务器，然后使用帐号与密码登录即可，而Oracle不能自动列举出网内的服务器，需要通过读取TNS配置文件才能列出经过配置的服务器名
+
+    * 配置文件名一般为：`tnsnames.ora`，默认路径：`%ORACLE_HOME%\network\admin\tnsnames.ora`
+
+* TNS的详细配置文件
+
+    * TNS的配置文件包括服务器端和客户端两部分
+
+    * 服务器端有`listener.ora`、`sqlnet.ora`和`tnsnames.ora`，如果通过`OCM(Oracle Connection Manage)`和域名服务管理客户端连接，服务器端可能还包括`cman.ora`等文件，客户端有`tnsnames.ora`、`sqlnet.ora`
+
+    * Oracle所有的TNS配置文件的默认路径：`%ORACLE_HOME%\network\admin`
+
+    * `listener.ora`：监听器配置文件，成功启动后是驻留在服务器端的一个服务，监听器是用来侦听客户端的连接请求以及建立客户端和服务器端连接通道的一个服务程序，默认情况下Oracle在1521端口上侦听客户端连接请求
+
+    * `sqlnet.ora`：用来管理和约束或限制tns连接的配置，通过在该文件中设置一些参数，可以管理TNS连接，根据参数作用的不同，需要分别在服务器和客户端配置
+
+    * `tnsnames.ora`：配置客户端到服务器端的连接服务，包括客户端要连接到的服务器和数据库的配置信息
+
+* TNS配置
+
+    * 首先在Oracle服务器端安装完成之后，应该先着手配置LISTENER，LISTENER是进行Oracle通讯的首要组件，紧接着在客户端安装Oracle client，同时配置`tnsnames.ora`文件
+
+    * 首先监听器包括两个部分：Oracle要监听的地址、端口、通讯协议；Oracle要监听的数据库实例
+
+        * 非RAC环境下，LISTENER只能监听本服务器的地址和实例，RAC环境下，LISTENER还可以监听远程服务器，每个数据库最少要配置一个监听器(注：RAC环境，指的是Oracle服务器集群配置的环境)
+        
+        * LISTENER部分配置了Oracle要监听的地址和端口信息；该文件中还会包括SID_LIST_LISTENER部分，这部分配置了Oracle需要监听的实例(注：在上述截图中并没有SID_LIST_LISTENER这一部分，这是因为Oracle自9i版本引入了动态监听服务注册，在数据库启动时，会自动注册当前数据库实例到监听列表，所以无需配置SID_LIST_LISTENER部分了)，HOST参数可以是Oracle服务器主机名称，也可以是相应的IP地址
+
+        * 在一个多IP的服务器上可以配置listener同时监听多个地址，比如下面的配置
+
+        ```ora
+        LISTENER= (DESCRIPTION= (ADDRESS_LIST=
+            (ADDRESS=(PROTOCOL=tcp)(HOST=192.168.0.11)(PORT=1521))
+            (ADDRESS=(PROTOCOL=tcp)(HOST=192.168.2.11) (PORT=1521))))
+        ```
+
+        * 或者可以配置多个监听器，分别监听不同的IP地址
+
+        * 一般说的TNS配置其实就是对`tnsnames.ora`文件的配置，`tnsnames.ora`有客户端的配置，也有服务器端的配置，客户端和服务器端配置的区别是因为服务器端的配置跟LISTENER的配置相关
+    
+    * tnsnames.ora也包括两部分
+
+        * `ADDRESS_LIST`部分包含了Oracle数据库服务器的监听地址信息，也就是要告诉TNS数据库可通过这个地址和CLIENT进行通讯
+
+        * `CONNECT_DATA`定义了CLIENT要连接的数据库，以及数据库的连接方式：专用或共享
+
+        * 在一个多IP环境中，TNS也可以配置多个远程IP地址
+
+        ```ora
+        CGDB = (DESCRIPTION = (ADDRESS_LIST =
+            (ADDRESS = (PROTOCOL = TCP)(HOST = 192.168.1.55)(PORT = 1521))
+            (ADDRESS = (PROTOCOL = TCP)(HOST = 192.168.1.56)(PORT = 1521)))
+            (CONNECT_DATA = (SERVICE_NAME = CGDB) (SERVER = DEDICATED)))
+        ```
+
+    * sqlnet.ora是个很重要的配置，它可以控制和管理Oracle连接的属性，根据参数作用的不同决定在客户端配置还是在server端配置
+        
+        * sqlnet.ora的配置是全局性的，也就说sqlnet.ora的配置是对所有的连接起作用，如果想对某个特殊的连接或服务进行约束或限制，可以在TNS配置相应参数
+
 ## 数据导入/导出
 
 * oracle 11g数据库的导入/导出，就是我们通常所说的oracle数据的还原/备份
@@ -1003,3 +1068,5 @@ CREATE TABLESPACE indx_tbs LOGGING DATAFILE '/u01/app/oracle/oradata/mynewdb/ind
     * `tools->import talbes`，然后再根据导出的数据格式选择导入dmp文件，或者sql文件，或者pde文件
 
     * 提示说明：导入之前最好把以前的表删除，当然导入另外数据库除外，另外导入时当发现进度条一直卡在一个点，而且导出的文件不再增大时，甚至是提示程序未响应，千万不要以为程序卡死了，这个导入导出就是比较缓慢，只要没有提示报错或者导入完成就不要停止程序
+
+
