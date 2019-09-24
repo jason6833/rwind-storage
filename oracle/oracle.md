@@ -720,6 +720,12 @@ CREATE TABLESPACE indx_tbs LOGGING DATAFILE '/u01/app/oracle/oradata/mynewdb/ind
         ( ( a.bytes - b.bytes ) / a.bytes ) DESC;
     ```
 
+* 查询用户表空间
+
+    ```sql
+    select default_tablespace from dba_users where username='TMS21';
+    ```
+
 ## TNS配置
 
 * Oracle中TNS的完整定义：`transparence Network Substrate`透明网络底层，监听服务是它重要的一部分，不是全部，不要把TNS当作只是监听器
