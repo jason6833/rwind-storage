@@ -900,7 +900,7 @@ CREATE TABLESPACE indx_tbs LOGGING DATAFILE '/u01/app/oracle/oradata/mynewdb/ind
     * 用户名username对象导入导出
 
     ```sql
-    exp(imp)  username/password@SERVICENAME:1521 file="e:\temp.dmp" owner(username1,username2,username3);
+    exp(imp)  username/password@SERVICENAME:1521 file="e:\temp.dmp" owner=(username1,username2,username3);
     ```
 
 ### expdp/impdp
