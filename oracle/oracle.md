@@ -1171,3 +1171,151 @@ CREATE TABLESPACE indx_tbs LOGGING DATAFILE '/u01/app/oracle/oradata/mynewdb/ind
     <img src="./images/oracle/03.jpg">
 
     * 如图所示，如果导出没有设置字符集，导入时不设置字符集，导出导入时客户端使用的字符集相同，会有字符集转换(EXP:ZHS16GBK-> US7ASCII;IMP: US7ASCII-> ZHS16GBK)，但是数据库中中文数据不会出现乱码，需要做的调整是设置xshell字符集和NLS_LANG与数据库保持一致
+
+## 编译视图
+
+* 批量编译存储工程的存储过程
+
+    ```sql
+    CREATE OR REPLACE PROCEDURE compile_invalid_procedures (
+        p_owner VARCHAR2 -- 所有者名称，即 SCHEMA
+    ) AS--编译某个用户下的无效存储过程
+        str_sql VARCHAR2(200);
+    BEGIN
+        FOR invalid_procedures IN (
+            SELECT
+                object_name
+            FROM
+                all_objects
+            WHERE
+                status = 'INVALID'
+                AND object_type = 'PROCEDURE'
+                AND owner = upper(p_owner)
+        ) LOOP
+            str_sql := 'alter procedure '
+                    || p_owner
+                    || '.'
+                    || invalid_procedures.object_name
+                    || ' compile';
+
+            BEGIN
+                EXECUTE IMMEDIATE str_sql;
+            EXCEPTION
+                --When Others Then Null;
+                WHEN OTHERS THEN
+                    dbms_output.put_line(sqlerrm);
+            END;
+        END LOOP;
+    END;
+    ```
+
+* 批量编译视图的存储过程
+
+    ```sql
+    CREATE OR REPLACE PROCEDURE compile_invalid_views (
+        p_owner VARCHAR2 -- 所有者名称，即 SCHEMA
+    ) AS --编译某个用户下的无效视图   
+        str_sql VARCHAR2(200);
+    BEGIN
+        FOR invalid_views IN (
+            SELECT
+                object_name
+            FROM
+                all_objects
+            WHERE
+                status = 'INVALID'
+                AND object_type = 'VIEW'
+                AND owner = upper(p_owner)
+        ) LOOP
+            str_sql := 'alter view '
+                    || p_owner
+                    || '.'
+                    || invalid_views.object_name
+                    || ' compile';
+
+            BEGIN
+                EXECUTE IMMEDIATE str_sql;
+            EXCEPTION
+            --When Others Then Null;
+                WHEN OTHERS THEN
+                    dbms_output.put_line(sqlerrm);
+            END;
+        END LOOP;
+    END;
+    ```
+
+* 批量编译同义词的存储过程
+
+    ```sql
+    CREATE OR REPLACE PROCEDURE compile_invalid_synonyms (
+        p_owner VARCHAR2 -- 所有者名称，即 SCHEMA
+    ) AS --编译某个用户下的无效同义词
+        str_sql VARCHAR2(200);
+    BEGIN
+        FOR invalid_synonyms IN (
+            SELECT
+                object_name
+            FROM
+                all_objects
+            WHERE
+                status = 'INVALID'
+                AND object_type = 'SYNONYM'
+                AND owner = upper(p_owner)
+        ) LOOP
+            str_sql := 'alter synonym '
+                    || p_owner
+                    || '.'
+                    || invalid_synonyms.object_name
+                    || ' compile';
+
+            BEGIN
+                EXECUTE IMMEDIATE str_sql;
+            EXCEPTION
+            --When Others Then Null;
+                WHEN OTHERS THEN
+                    dbms_output.put_line(sqlerrm);
+            END;
+        END LOOP;
+    END;
+    ```
+
+* 批量编译函数的存储过程
+
+    ```sql
+    CREATE OR REPLACE PROCEDURE compile_invalid_functions (
+        p_owner VARCHAR2 -- 所有者名称，即 SCHEMA
+    ) AS --编译某个用户下的无效存储过程
+        str_sql VARCHAR2(200);
+    BEGIN
+        FOR invalid_procedures IN (
+            SELECT
+                object_name
+            FROM
+                all_objects
+            WHERE
+                status = 'INVALID'
+                AND object_type = 'FUNCTION'
+                AND owner = upper(p_owner)
+        ) LOOP
+            str_sql := 'alter function '
+                    || p_owner
+                    || '.'
+                    || invalid_procedures.object_name
+                    || ' compile';
+
+            BEGIN
+                EXECUTE IMMEDIATE str_sql;
+            EXCEPTION
+            --When Others Then Null;
+                WHEN OTHERS THEN
+                    dbms_output.put_line(sqlerrm);
+            END;
+        END LOOP;
+    END;
+    ```
+
+* 执行存储过程
+
+    ```sql
+    exec compile_invalid_functions('schema');
+    ```
