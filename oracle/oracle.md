@@ -192,7 +192,7 @@ sidebarDepth: 2
 
     <img src="./images/oracle/06.png">
 
-## 创建数据库
+## 数据库操作
 
 ### 交互模式DBCA
 
@@ -651,7 +651,7 @@ CREATE TABLESPACE indx_tbs LOGGING DATAFILE '/u01/app/oracle/oradata/mynewdb/ind
 
 * (Optional) Enable Automatic Instance Startup
 
-## 创建表空间
+## 表空间操作
 
 * oracle在创建表空间的时候要对应一个用户，表空间和用户一般一一对应，mysql和sql server直接通过`create databse 数据库名`就可以直接创建数据库了，而oracle创建一个表空间需要以下三个步骤
 
@@ -785,7 +785,7 @@ CREATE TABLESPACE indx_tbs LOGGING DATAFILE '/u01/app/oracle/oradata/mynewdb/ind
         
         * sqlnet.ora的配置是全局性的，也就说sqlnet.ora的配置是对所有的连接起作用，如果想对某个特殊的连接或服务进行约束或限制，可以在TNS配置相应参数
 
-## 数据导入/导出
+## 数据导入导出
 
 * oracle 11g数据库的导入/导出，就是我们通常所说的oracle数据的还原/备份
 
@@ -1069,4 +1069,105 @@ CREATE TABLESPACE indx_tbs LOGGING DATAFILE '/u01/app/oracle/oradata/mynewdb/ind
 
     * 提示说明：导入之前最好把以前的表删除，当然导入另外数据库除外，另外导入时当发现进度条一直卡在一个点，而且导出的文件不再增大时，甚至是提示程序未响应，千万不要以为程序卡死了，这个导入导出就是比较缓慢，只要没有提示报错或者导入完成就不要停止程序
 
+## 字符集
 
+* 查看数据库字符集
+
+    ```sql
+    SQL> SELECT USERENV('language') from dual;
+
+    USERENV('LANGUAGE')
+    ----------------------------------------------------
+    AMERICAN_AMERICA.AL32UTF8
+    ```
+
+* 修改数据库字符集
+
+    ```sql
+    SQL> shutdown immediate;
+
+    Database closed.
+    Database dismounted.
+    ORACLE instance shut down.
+    ```
+
+    ```sql
+    SQL> startup mount;
+
+    ORACLE instance started.
+    Total System Global Area  409194496 bytes
+    Fixed Size                2228864 bytes
+    Variable Size                343936384 bytes
+    Database Buffers          58720256 bytes
+    Redo Buffers                  4308992 bytes
+    Database mounted.
+    ```
+
+    ```sql
+    SQL> ALTER SYSTEM ENABLE RESTRICTED SESSION;
+
+    System altered.
+    ```
+
+    ```sql
+    SQL> ALTER SYSTEM SET JOB_QUEUE_PROCESSES=0;
+
+    System altered.
+    ```
+
+    ```sql
+    SQL> ALTER SYSTEM SET AQ_TM_PROCESSES=0;
+
+    System altered.
+    ```
+
+    ```sql
+    SQL> ALTER DATABASE OPEN;
+
+    Database altered.
+    ```
+
+    ```sql
+    SQL> ALTER DATABASE CHARACTER SET INTERNAL_USE ZHS16GBK;
+
+    Database altered.
+    ```
+
+    ```sql
+    SQL> shutdown immediate;
+
+    Database closed.
+    Database dismounted.
+    ORACLE instance shut down.
+    ```
+
+    ```sql
+    SQL> startup;
+
+    ORACLE instance started.
+    Total System Global Area  409194496 bytes
+    Fixed Size                2228864 bytes
+    Variable Size                343936384 bytes
+    Database Buffers          58720256 bytes
+    Redo Buffers                  4308992 bytes
+    Database mounted.
+    Database opened.
+    ```
+
+    ```sql
+    SQL> SELECT USERENV('language') from dual;
+
+    USERENV('LANGUAGE')
+    ----------------------------------------------------
+    AMERICAN_AMERICA.ZHS16GBK
+    ```
+
+* 现在，源端库与目标端库的字符集调整到一致了，都是ZHS16GBK，接下来导入源端没有设置NLS_LANG，看中文数据是否出现乱码
+
+    <img src="./images/oracle/02.jpg">
+
+* 如图所示，没有设置NLS_LANG时，oracle的imp导入时，尽管源端与目标端的字符集都相同，但是中文数据依旧乱码，但是，这种显示乱码只是xshell字符集问题，数据库内部并不是真正的乱码，需要调整xshell字符集、设置NLS_LANG
+
+    <img src="./images/oracle/03.jpg">
+
+    * 如图所示，如果导出没有设置字符集，导入时不设置字符集，导出导入时客户端使用的字符集相同，会有字符集转换(EXP:ZHS16GBK-> US7ASCII;IMP: US7ASCII-> ZHS16GBK)，但是数据库中中文数据不会出现乱码，需要做的调整是设置xshell字符集和NLS_LANG与数据库保持一致
