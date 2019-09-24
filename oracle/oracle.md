@@ -903,6 +903,28 @@ CREATE TABLESPACE indx_tbs LOGGING DATAFILE '/u01/app/oracle/oradata/mynewdb/ind
     exp(imp)  username/password@SERVICENAME:1521 file="e:\temp.dmp" owner=(username1,username2,username3);
     ```
 
+* exp备份导出时报`EXP-00091: Exporting questionable statistics`错误
+
+    * 引起此问题的原因是数据库字符集和操作系统的NLS_LANG不一致导致
+
+    * 查询数据库的字符集信息
+
+    ```sql
+    SQL> select userenv('language') from dual;
+
+    USERENV('LANGUAGE')
+    ----------------------------------------------------
+    AMERICAN_AMERICA.ZHS16GBK
+    ```
+
+    * 设置操作系统的NLS_LANG值
+
+    ```bash
+    export NLS_LANG=AMERICAN_AMERICA.ZHS16GBK
+    ```
+
+    * 重新运行数据库导出命令
+
 ### expdp/impdp
 
 * 创建directory
