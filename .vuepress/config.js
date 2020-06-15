@@ -16,6 +16,16 @@ module.exports = {
       { text: 'Github', link: 'https://github.com/jason6833/rwind-storage/' }
     ],
     displayAllHeaders: true,
-    sidebar:'auto'
+    sidebarDepth: 2,
+    sidebar: {
+      "/oracle/": [
+        {
+          title: "介绍",
+          children: [
+            "./基本/概述"
+          ]
+        }
+      ]
+    }
   }
 }
