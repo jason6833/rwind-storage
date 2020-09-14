@@ -11,6 +11,7 @@ module.exports = {
       { text: "Oracle", link: "/oracle/" },
       { text: "MySQL", link: "/mysql/" },
       { text: "Redis", link: "/redis/" },
+      { text: "Kafaka", link: "/kafka/" },
       { text: "Github", link: "https://github.com/jason6833/rwind-storage/" },
     ],
     displayAllHeaders: true,
